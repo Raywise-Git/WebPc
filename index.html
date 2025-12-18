@@ -1,0 +1,264 @@
+﻿<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <title>通用表單建立器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .form-canvas {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            border-top: 4px solid #0b5d3b;
+            min-height: 500px;
+        }
+
+        .form-item {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 14px;
+            border-left: 5px solid #1e40af;
+        }
+
+        .sub-form {
+            margin-top: 8px;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 6px;
+            border-left: none;
+        }
+
+            .sub-form .d-flex,
+            .sub-form .input-group,
+            .sub-form input.form-check-input {
+                margin-left: 0 !important;
+                padding-left: 0 !important;
+                border-left: none !important;
+            }
+
+            .sub-form span[contenteditable] {
+                padding: 2px 4px;
+                border-radius: 4px;
+                display: inline-block;
+            }
+
+                .sub-form span[contenteditable]:focus {
+                    background: #e0edff;
+                    outline: none;
+                }
+
+        .control-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            height: auto;
+            z-index: 9999;
+            background: #ffffff;
+            border-radius: 12px;
+            border-top: 3px solid #888;
+            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+            padding: 10px;
+            cursor: move;
+        }
+
+            .control-panel h5 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+
+        .form-check-input {
+            cursor: pointer;
+        }
+
+        button {
+            border-radius: 6px;
+        }
+
+        #previewArea {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div style="margin:0 auto;width:100%;height:100%; background:#eeeeee;">
+        <!-- 浮動控制面板 -->
+        <div class="control-panel">
+            <h5 class="mb-3">⚙️ 控制面板</h5>
+            <div class="mb-2">
+                <label class="form-label">題型選擇</label>
+                <select id="fieldType" class="form-select">
+                    <option value="short">簡答</option>
+                    <option value="long">詳答</option>
+                    <option value="radio">單選</option>
+                    <option value="checkbox">多選</option>
+                    <option value="list">ListBox</option>
+                </select>
+            </div>
+            <div id="optionArea" class="mb-2" style="display:none;">
+                <label class="form-label">選項內容</label>
+                <div id="optionList"></div>
+                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="addOption()">＋ 新增選項</button>
+                <div id="previewArea"></div>
+            </div>
+            <button class="btn btn-primary w-100 mt-3" onclick="addFieldFromPanel()">新增內容</button>
+        </div>
+
+        <div class="container py-4">
+            <h3 class="mb-3">表單建立器</h3>
+            <div id="formCanvas" class="form-canvas"></div>
+        </div>
+    </div>
+    <script>
+        let fieldCount = 0;
+        const fieldType = document.getElementById('fieldType');
+        const optionArea = document.getElementById('optionArea');
+        const optionList = document.getElementById('optionList');
+        const previewArea = document.getElementById('previewArea');
+
+        fieldType.addEventListener('change', () => {
+            optionList.innerHTML = '';
+            previewArea.innerHTML = '';
+            if (['radio', 'checkbox', 'list'].includes(fieldType.value)) {
+                optionArea.style.display = 'block';
+                addOption();
+                //addOption();
+            } else {
+                optionArea.style.display = 'none';
+            }
+        });
+
+        function addOption() {
+            const div = document.createElement('div');
+            div.className = 'input-group mb-1';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control';
+            input.placeholder = '選項文字';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'btn btn-outline-danger';
+            removeBtn.textContent = '✕';
+            removeBtn.onclick = () => {
+                div.remove();
+                updatePreview();
+            };
+
+            div.appendChild(input);
+            div.appendChild(removeBtn);
+            optionList.appendChild(div);
+
+            input.addEventListener('input', updatePreview);
+            updatePreview();
+        }
+
+        function updatePreview() {
+            previewArea.innerHTML = '';
+            const type = fieldType.value;
+
+            if (type === 'radio' || type === 'checkbox') {
+                optionList.querySelectorAll('input').forEach((inp, idx) => {
+                    if (!inp.value) return;
+                    const label = document.createElement('label');
+                    label.className = type === 'radio' ? 'd-block' : 'd-block';
+                    label.innerHTML = `<input type="${type}" name="preview_${fieldCount}" class="form-check-input me-2"> ${inp.value}`;
+                    previewArea.appendChild(label);
+                });
+            }
+            else if (type === 'list') {
+                //const select = document.createElement('select');
+                //select.className = 'form-select';
+                //optionList.querySelectorAll('input').forEach(inp => {
+                //    if (!inp.value) return;
+                //    const option = document.createElement('option');
+                //    option.textContent = inp.value;
+                //    select.appendChild(option);
+                //});
+                //previewArea.appendChild(select);
+            }
+        }
+
+        function addFieldFromPanel() {
+            fieldCount++;
+            const type = fieldType.value;
+            const div = document.createElement('div');
+            div.className = 'form-item';
+
+            // 題目區塊
+            let html = `<div class="fw-bold mb-2" contenteditable="true" style="outline:none;cursor:text;">題目 ${fieldCount}</div>`;
+
+            if (type === 'short') html += `<input type="text" class="form-control">`;
+            if (type === 'long') html += `<textarea class="form-control" rows="3"></textarea>`;
+
+            if (type === 'radio' || type === 'checkbox') {
+                const t = type === 'radio' ? 'radio' : 'checkbox';
+                html += `<div class="sub-form p-2 mt-2">`;
+                optionList.querySelectorAll('input').forEach((opt, i) => {
+                    html += `<div class="d-flex align-items-center mb-1">
+                            <input type="${t}" name="q${fieldCount}" class="form-check-input me-2"/>
+                            <span contenteditable="true" style="flex:1;outline:none;cursor:text;">${opt.value || ('選項' + (i + 1))}</span>
+                            </div>`;
+                });
+                html += `</div>`;
+            }
+
+            if (type === 'list') {
+                html += `<div class="sub-form p-2 mt-2">`;
+                html += `<select id="lstSelda" class="form-select mb-2" size="3">`;
+                optionList.querySelectorAll('input').forEach((opt, i) => {
+                    html += `<option>${opt.value || ('選項' + (i + 1))}</option>`;
+                });
+                html += `</select>`;
+
+                // 讓使用者可以修改選項
+                html += `<input id="lstSel" class="form-control" style="readyonly=readyonly" />`;
+                html += `</div>`;
+
+            }
+
+            div.innerHTML = html;
+            document.getElementById('formCanvas').appendChild(div);
+
+            var selectEl = document.getElementById('lstSelda');
+            var inputEl = document.getElementById('lstSel');
+
+            if (!selectEl || !inputEl) return;
+
+            selectEl.addEventListener('change', () => {
+                inputEl.value = selectEl.value;
+            });
+        }
+
+        const panel = document.querySelector('.control-panel');
+
+        let isDragging = false;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        panel.addEventListener('mousedown', (e) => {
+            isDragging = true;
+
+            const rect = panel.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            panel.style.right = 'auto'; // stop using right after drag starts
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            panel.style.left = (e.clientX - offsetX) + 'px';
+            panel.style.top = (e.clientY - offsetY) + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    </script>
+</body>
+</html>
+
+
+
